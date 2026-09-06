@@ -4,7 +4,66 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const audio = window.CockapooAudio;
-  const avatar = new window.CockapooAvatar('cockapoo-canvas');
+  const photoEl = document.getElementById('cockapoo-photo');
+  const ringEl = document.getElementById('reaction-ring');
+  const pillEl = document.getElementById('status-pill');
+  const statusEmoji = document.getElementById('status-emoji');
+  const statusText = document.getElementById('status-text');
+  const pictureWrapper = document.getElementById('picture-wrapper');
+
+  function setStatus(emoji, text, highlight = true) {
+    if (statusEmoji) statusEmoji.textContent = emoji;
+    if (statusText) statusText.textContent = text;
+    if (pillEl) {
+      if (highlight) pillEl.classList.add('highlight');
+      else pillEl.classList.remove('highlight');
+    }
+  }
+
+  // Reactive picture animations when sounds play
+  audio.onSoundStart = (name, category, meta) => {
+    if (ringEl) {
+      ringEl.classList.remove('ring-active');
+      void ringEl.offsetWidth; // re-trigger animation
+      ringEl.classList.add('ring-active');
+    }
+
+    if (photoEl) {
+      photoEl.classList.remove('tilt-left', 'tilt-right', 'head-up', 'bark-bounce');
+      if (name === 'curious_boof') {
+        photoEl.classList.add('tilt-left');
+        setStatus('🧐', 'Curious Boof! Head tilted!');
+      } else if (name === 'squeak') {
+        photoEl.classList.add('tilt-right');
+        setStatus('🧸', 'SQUEAKER! Head tilted!');
+      } else if (name === 'howl') {
+        photoEl.classList.add('head-up');
+        setStatus('🎶', 'AWOOO! Singing along!');
+      } else if (name === 'puppy_yip') {
+        photoEl.classList.add('tilt-left');
+        setStatus('🐾', 'Puppy Yip! Perked ears!');
+      } else {
+        photoEl.classList.add('bark-bounce');
+        setStatus('🗣️', 'Woof! Barking back!');
+      }
+    }
+  };
+
+  audio.onSoundEnd = () => {
+    setTimeout(() => {
+      if (photoEl) photoEl.classList.remove('tilt-left', 'tilt-right', 'head-up', 'bark-bounce');
+      setStatus('🐶', 'Listening attentively...', false);
+    }, 450);
+  };
+
+  // Tap on photo to interact & play happy yip
+  if (pictureWrapper) {
+    pictureWrapper.addEventListener('click', () => {
+      audio.playPuppyYip();
+      highlightCard('puppy-yip');
+      setStatus('✨', 'Good dog! *happy wiggles*');
+    });
+  }
 
   // Audio mappings
   const actions = {

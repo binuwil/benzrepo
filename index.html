@@ -20,13 +20,20 @@
       <p class="app-subtitle">Real recorded dog barks to get your Cockapoo to respond, perk his ears, and tilt his head!</p>
     </header>
 
-    <!-- Animated Cockapoo Avatar -->
+    <!-- Cockapoo Picture & Interactive Display -->
     <section class="avatar-card">
-      <div class="canvas-container" title="Tap him to tease or play!">
-        <canvas id="cockapoo-canvas"></canvas>
+      <div class="picture-wrapper" id="picture-wrapper" title="Tap him to hear a playful woof!">
+        <div class="photo-frame">
+          <img src="cockapoo.jpg" alt="Adorable Golden Cockapoo Puppy" id="cockapoo-photo" class="cockapoo-img">
+          <div class="sound-reaction-ring" id="reaction-ring"></div>
+        </div>
+        <div class="status-pill" id="status-pill">
+          <span id="status-emoji">🐶</span>
+          <span id="status-text">Listening attentively...</span>
+        </div>
       </div>
       <div class="pet-hint">
-        <span>🐾 Tap the buttons below to play real dog barks!</span>
+        <span>🐾 Tap the picture or buttons to make him tilt his head!</span>
       </div>
     </section>
 
@@ -154,7 +161,6 @@
   <!-- Scripts -->
   <script src="barks-data.js"></script>
   <script src="audio-engine.js"></script>
-  <script src="cockapoo-avatar.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
