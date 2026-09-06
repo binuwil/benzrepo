@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 test_*.wav
 dog_long.mp3
+.ssh_key/
