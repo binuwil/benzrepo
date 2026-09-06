@@ -25,7 +25,7 @@ def find_available_port(start_port):
     port = start_port
     while port < start_port + 50:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(('localhost', port)) != 0:
+            if s.connect_ex(('127.0.0.1', port)) != 0:
                 return port
         port += 1
     return start_port
@@ -48,7 +48,8 @@ def main():
         print(f"Could not open browser automatically: {e}")
 
     try:
-        with socketserver.TCPServer(("", port), Handler) as httpd:
+        # Bind strictly to loopback interface (127.0.0.1) for local security
+        with socketserver.TCPServer(("127.0.0.1", port), Handler) as httpd:
             httpd.serve_forever()
     except KeyboardInterrupt:
         print("\n🐶 Shutting down Cockapoo Responder server. Woof!")

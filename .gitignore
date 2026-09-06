@@ -4,3 +4,15 @@ __pycache__/
 test_*.wav
 dog_long.mp3
 .ssh_key/
+
+# Security & Secrets Prevention
+*.key
+*.pem
+*.pfx
+*.p12
+.env
+.env.*
+*.token
+id_*
+credentials.json
+

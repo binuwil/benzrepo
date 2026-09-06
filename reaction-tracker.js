@@ -142,14 +142,15 @@ class ReactionTracker {
       if (this.data.history.length === 0) {
         historyListEl.innerHTML = `<p class="empty-history">No reactions logged yet. Tap a sound, then log how your Cockapoo responded!</p>`;
       } else {
+        const escapeHtml = (str) => String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
         historyListEl.innerHTML = this.data.history.slice(0, 6).map(item => {
           const rObj = this.reactionTypes.find(r => r.id === item.reaction) || { icon: '🐾', label: item.reaction };
           const time = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           return `
             <div class="history-item">
-              <span class="history-icon">${rObj.icon}</span>
-              <span class="history-desc"><strong>${this.formatSoundName(item.sound)}</strong> → ${rObj.label}</span>
-              <span class="history-time">${time}</span>
+              <span class="history-icon">${escapeHtml(rObj.icon)}</span>
+              <span class="history-desc"><strong>${escapeHtml(this.formatSoundName(item.sound))}</strong> → ${escapeHtml(rObj.label)}</span>
+              <span class="history-time">${escapeHtml(time)}</span>
             </div>
           `;
         }).join('');
