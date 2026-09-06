@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cockapoo Soundboard 🐶 Real Dog Barks</title>
+  <meta name="description" content="Simple, instant real dog bark sounds and squeakers to make your Cockapoo respond and tilt his head.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐶</text></svg>">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="title-row">
+        <h1>Cockapoo Soundboard</h1>
+        <span class="badge-tag">Real Dog Barks</span>
+      </div>
+      <p class="app-subtitle">Real recorded dog barks to get your Cockapoo to respond, perk his ears, and tilt his head!</p>
+    </header>
+
+    <!-- Animated Cockapoo Avatar -->
+    <section class="avatar-card">
+      <div class="canvas-container" title="Tap him to tease or play!">
+        <canvas id="cockapoo-canvas"></canvas>
+      </div>
+      <div class="pet-hint">
+        <span>🐾 Tap the buttons below to play real dog barks!</span>
+      </div>
+    </section>
+
+    <!-- Quick Action Combo -->
+    <div class="combo-banner" id="btn-combo-headtilt">
+      <div class="combo-banner-content">
+        <span class="combo-banner-icon">⚡</span>
+        <div>
+          <h3>Head-Tilt Quick Combo</h3>
+          <p>Plays: Curious Boof → Squeak → Happy Bark</p>
+        </div>
+      </div>
+      <button class="combo-trigger-btn" id="combo-btn">▶️ Play Combo</button>
+    </div>
+
+    <!-- Core Dog Bark Soundboard Grid -->
+    <section class="soundboard-card">
+      <div class="soundboard-header">
+        <h2>🐶 Dog Bark Sounds</h2>
+        <span class="subtitle-hint">Tap any sound or use keyboard shortcuts 1–6</span>
+      </div>
+
+      <div class="sounds-grid">
+        <button class="sound-card" data-sound="classic-bark">
+          <span class="card-icon">🐶</span>
+          <div class="card-info">
+            <strong>Classic Woof</strong>
+            <span>Standard real dog bark</span>
+          </div>
+          <span class="key-badge">1</span>
+        </button>
+
+        <button class="sound-card" data-sound="double-bark">
+          <span class="card-icon">🐕</span>
+          <div class="card-info">
+            <strong>Double Bark</strong>
+            <span>Real "Arf-Arf!" couplet</span>
+          </div>
+          <span class="key-badge">2</span>
+        </button>
+
+        <button class="sound-card" data-sound="puppy-yip">
+          <span class="card-icon">🐾</span>
+          <div class="card-info">
+            <strong>Puppy Yip</strong>
+            <span>Playful, high-pitched yip</span>
+          </div>
+          <span class="key-badge">3</span>
+        </button>
+
+        <button class="sound-card highlight-card" data-sound="curious-boof">
+          <span class="card-icon">🧐</span>
+          <div class="card-info">
+            <strong>Curious Boof</strong>
+            <span>Muffled throat "whuff" (head-tilt trigger!)</span>
+          </div>
+          <span class="key-badge">4</span>
+        </button>
+
+        <button class="sound-card" data-sound="deep-woof">
+          <span class="card-icon">🦮</span>
+          <div class="card-info">
+            <strong>Deep Woof</strong>
+            <span>Low, resonant big dog bark</span>
+          </div>
+          <span class="key-badge">5</span>
+        </button>
+
+        <button class="sound-card" data-sound="alert-bark">
+          <span class="card-icon">🚨</span>
+          <div class="card-info">
+            <strong>Alert Bark</strong>
+            <span>Sharp, authoritative watchdog bark</span>
+          </div>
+          <span class="key-badge">6</span>
+        </button>
+
+        <button class="sound-card squeak-card" data-sound="squeak">
+          <span class="card-icon">🧸</span>
+          <div class="card-info">
+            <strong>Squeaky Toy</strong>
+            <span>Real rubber squeaker chirp</span>
+          </div>
+          <span class="key-badge">Space</span>
+        </button>
+
+        <button class="sound-card howl-card" data-sound="howl">
+          <span class="card-icon">🐺</span>
+          <div class="card-info">
+            <strong>"AWOOO" Howl</strong>
+            <span>Sing-along pack howl</span>
+          </div>
+          <span class="key-badge">H</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Simple Tuning Controls -->
+    <section class="simple-controls-card">
+      <div class="control-row">
+        <div class="control-label">
+          <span>🐕 Bark Pitch / Dog Size:</span>
+          <strong id="pitch-display">Cockapoo (Normal)</strong>
+        </div>
+        <div class="slider-wrapper">
+          <span class="slider-end-label">Big Dog</span>
+          <input type="range" id="pitch-slider" min="0.75" max="1.35" step="0.05" value="1.0">
+          <span class="slider-end-label">Puppy</span>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-label">
+          <span>🔊 Volume:</span>
+          <strong id="volume-display">90%</strong>
+        </div>
+        <input type="range" id="volume-slider" min="0.1" max="1.0" step="0.05" value="0.90">
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="sound-toast" id="sound-toast"></div>
+
+  <!-- Scripts -->
+  <script src="barks-data.js"></script>
+  <script src="audio-engine.js"></script>
+  <script src="cockapoo-avatar.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

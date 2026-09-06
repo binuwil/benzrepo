@@ -1,0 +1,377 @@
+/* ==========================================================================
+   Cockapoo Soundboard Styles (Simplified & Focused)
+   ========================================================================== */
+
+:root {
+  --bg-top: #FAF7F2;
+  --bg-bottom: #F2ECE1;
+  --surface: #FFFFFF;
+  --border: #E8DECF;
+  --border-dark: #D4C5B0;
+
+  --text-main: #2D1D0F;
+  --text-muted: #7A6652;
+  --text-light: #A3917F;
+
+  --accent-gold: #E2943B;
+  --accent-gold-hover: #CF8025;
+  --accent-gold-light: #FFF4E5;
+  --accent-coral: #FF5A5F;
+  --accent-coral-light: #FFEBEB;
+  --accent-blue: #3B82F6;
+  --accent-blue-light: #EFF6FF;
+
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+  --shadow-card: 0 4px 0 var(--border);
+  --shadow-elevated: 0 8px 24px rgba(45, 29, 15, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+  color: var(--text-main);
+  min-height: 100vh;
+  padding: 16px 12px 40px 12px;
+}
+
+.app-container {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header */
+.app-header {
+  text-align: center;
+  padding: 8px 0 4px 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.app-header h1 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.badge-tag {
+  background: var(--accent-gold-light);
+  color: var(--accent-gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(226, 148, 59, 0.3);
+  text-transform: uppercase;
+}
+
+.app-subtitle {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+/* Avatar Card */
+.avatar-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-elevated);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-container {
+  width: 100%;
+  max-width: 320px;
+  height: 210px;
+  cursor: pointer;
+}
+
+#cockapoo-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.pet-hint {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+/* Quick Combo Banner */
+.combo-banner {
+  background: linear-gradient(135deg, #FF764C 0%, #FF5A5F 100%);
+  color: white;
+  border-radius: var(--radius-card);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 16px rgba(255, 90, 95, 0.28);
+}
+
+.combo-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.combo-banner-icon {
+  font-size: 1.8rem;
+}
+
+.combo-banner h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.combo-banner p {
+  font-size: 0.8rem;
+  opacity: 0.92;
+}
+
+.combo-trigger-btn {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.1s ease;
+}
+
+.combo-trigger-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.combo-trigger-btn.running {
+  background: white;
+  color: var(--accent-coral);
+}
+
+/* Soundboard Card */
+.soundboard-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(45, 29, 15, 0.04);
+  padding: 18px 20px;
+}
+
+.soundboard-header {
+  margin-bottom: 14px;
+}
+
+.soundboard-header h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.subtitle-hint {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+.sounds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 540px) {
+  .sounds-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.sound-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  box-shadow: 0 4px 0 var(--border);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.12s ease;
+}
+
+.sound-card:hover {
+  border-color: var(--accent-gold);
+  box-shadow: 0 4px 0 var(--accent-gold);
+}
+
+.sound-card:active,
+.sound-card.card-active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--accent-gold);
+  background: var(--accent-gold-light);
+  border-color: var(--accent-gold);
+}
+
+.card-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.card-info strong {
+  display: block;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.card-info span {
+  display: block;
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.25;
+}
+
+.key-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-light);
+  background: var(--bg-top);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+/* Card Accents */
+.highlight-card {
+  border-color: rgba(226, 148, 59, 0.45);
+  background: #FFFDF9;
+}
+
+.squeak-card {
+  border-color: rgba(255, 90, 95, 0.3);
+}
+
+.squeak-card:hover {
+  border-color: var(--accent-coral);
+  box-shadow: 0 4px 0 var(--accent-coral);
+}
+
+.squeak-card:active,
+.squeak-card.card-active {
+  background: var(--accent-coral-light);
+  border-color: var(--accent-coral);
+  box-shadow: 0 1px 0 var(--accent-coral);
+}
+
+.howl-card {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.howl-card:hover {
+  border-color: #6366F1;
+  box-shadow: 0 4px 0 #6366F1;
+}
+
+.howl-card:active,
+.howl-card.card-active {
+  background: #EEF2FF;
+  border-color: #6366F1;
+  box-shadow: 0 1px 0 #6366F1;
+}
+
+/* Simple Tuning Controls */
+.simple-controls-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.control-label strong {
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-end-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
