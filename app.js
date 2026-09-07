@@ -20,50 +20,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Reactive picture animations when sounds play
-  audio.onSoundStart = (name, category, meta) => {
-    if (ringEl) {
-      ringEl.classList.remove('ring-active');
-      void ringEl.offsetWidth; // re-trigger animation
-      ringEl.classList.add('ring-active');
+    const allAnimClasses = [
+      'tilt-left', 'tilt-right', 'head-up', 'bark-bounce',
+      'double-bark-shake', 'deep-woof-shake', 'alert-perk',
+      'happy-wiggle', 'puppy-scale', 'bigdog-scale'
+    ];
+
+    function clearPhotoAnims() {
+      if (photoEl) photoEl.classList.remove(...allAnimClasses);
     }
 
-    if (photoEl) {
-      photoEl.classList.remove('tilt-left', 'tilt-right', 'head-up', 'bark-bounce');
-      if (name === 'curious_boof') {
-        photoEl.classList.add('tilt-left');
-        setStatus('🧐', 'Curious Boof! Head tilted!');
-      } else if (name === 'squeak') {
-        photoEl.classList.add('tilt-right');
-        setStatus('🧸', 'SQUEAKER! Head tilted!');
-      } else if (name === 'howl') {
-        photoEl.classList.add('head-up');
-        setStatus('🎶', 'AWOOO! Singing along!');
-      } else if (name === 'puppy_yip') {
-        photoEl.classList.add('tilt-left');
-        setStatus('🐾', 'Puppy Yip! Perked ears!');
-      } else {
-        photoEl.classList.add('bark-bounce');
-        setStatus('🗣️', 'Woof! Barking back!');
+    // Reactive picture animations when sounds play
+    audio.onSoundStart = (name, category, meta) => {
+      if (ringEl) {
+        ringEl.classList.remove('ring-active');
+        void ringEl.offsetWidth; // re-trigger animation
+        ringEl.classList.add('ring-active');
       }
+
+      if (photoEl) {
+        clearPhotoAnims();
+        void photoEl.offsetWidth; // force re-flow for animation reset
+
+        if (name === 'curious_boof') {
+          photoEl.classList.add('tilt-left');
+          setStatus('🧐', 'Curious Boof! Head tilted left!');
+        } else if (name === 'squeak') {
+          photoEl.classList.add('tilt-right');
+          setStatus('🧸', 'SQUEAKER! Head tilted right!');
+        } else if (name === 'howl') {
+          photoEl.classList.add('head-up');
+          setStatus('🎶', 'AWOOO! Singing along!');
+        } else if (name === 'puppy_yip') {
+          photoEl.classList.add('happy-wiggle');
+          setStatus('🐾', 'Puppy Yip! Perked & happy!');
+        } else if (name === 'double_bark') {
+          photoEl.classList.add('double-bark-shake');
+          setStatus('🐶', 'Double Bark! Double bounce!');
+        } else if (name === 'deep_woof') {
+          photoEl.classList.add('deep-woof-shake');
+          setStatus('🐕', 'Deep Woof! Big dog rumble!');
+        } else if (name === 'alert_bark') {
+          photoEl.classList.add('alert-perk');
+          setStatus('🚨', 'Alert Bark! Ears up & alert!');
+        } else {
+          photoEl.classList.add('bark-bounce');
+          setStatus('🗣️', 'Woof! Barking back!');
+        }
+      }
+    };
+
+    audio.onSoundEnd = () => {
+      setTimeout(() => {
+        clearPhotoAnims();
+        setStatus('🐶', 'Listening attentively...', false);
+      }, 450);
+    };
+
+    // Tap on photo to interact & play happy wiggle yip
+    if (pictureWrapper) {
+      pictureWrapper.addEventListener('click', () => {
+        audio.playPuppyYip();
+        highlightCard('puppy-yip');
+        clearPhotoAnims();
+        if (photoEl) photoEl.classList.add('happy-wiggle');
+        setStatus('✨', 'Good dog! *happy wiggles*');
+      });
     }
-  };
-
-  audio.onSoundEnd = () => {
-    setTimeout(() => {
-      if (photoEl) photoEl.classList.remove('tilt-left', 'tilt-right', 'head-up', 'bark-bounce');
-      setStatus('🐶', 'Listening attentively...', false);
-    }, 450);
-  };
-
-  // Tap on photo to interact & play happy yip
-  if (pictureWrapper) {
-    pictureWrapper.addEventListener('click', () => {
-      audio.playPuppyYip();
-      highlightCard('puppy-yip');
-      setStatus('✨', 'Good dog! *happy wiggles*');
-    });
-  }
 
   // Audio mappings
   const actions = {
@@ -142,6 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
     pitchSlider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       audio.setPitchMultiplier(val);
+      if (photoEl) {
+        photoEl.classList.remove('puppy-scale', 'bigdog-scale');
+        if (val < 0.88) photoEl.classList.add('bigdog-scale');
+        else if (val > 1.12) photoEl.classList.add('puppy-scale');
+      }
       if (val < 0.88) {
         pitchDisplay.textContent = `${val.toFixed(2)}x (Big Dog)`;
       } else if (val > 1.12) {
