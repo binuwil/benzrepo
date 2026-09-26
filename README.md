@@ -2,7 +2,7 @@
 
 An interactive dog soundboard with breed-selectable portraits, recorded bark samples, and playful squeaky-toy sounds.
 
-![Doggie Soundboard main page](screenshots/doggie-soundboard.jpg)
+![Doggie Soundboard desktop snapshot](screenshots/doggie-soundboard.jpg)
 
 Built with pure HTML5, CSS3, and the **Web Audio API** for responsive procedural sounds and recorded canine audio.
 
