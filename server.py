@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Cockapoo Responder Local Server
-Serves the application locally and opens it directly in your browser.
-"""
+"""Doggie Soundboard local server."""
 import http.server
 import socketserver
 import webbrowser
@@ -20,6 +17,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Suppress routine GET logging for cleaner terminal
         pass
 
+class AppTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+    def handle_error(self, request, client_address):
+        error = sys.exc_info()[1]
+        if isinstance(error, (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)):
+            return
+        super().handle_error(request, client_address)
+
 def find_available_port(start_port):
     import socket
     port = start_port
@@ -35,9 +41,9 @@ def main():
     url = f"http://localhost:{port}"
 
     print("=" * 60)
-    print("🐶 Cockapoo Responder App Server Running!")
+    print("🐶 Doggie Soundboard server running!")
     print(f"📡 Local URL: {url}")
-    print("💡 Tap the sounds to make your Cockapoo tilt his head and respond!")
+    print("💡 Choose a dog and tap a sound to hear it!")
     print("🛑 Press Ctrl+C to stop the server.")
     print("=" * 60)
 
@@ -49,10 +55,10 @@ def main():
 
     try:
         # Bind strictly to loopback interface (127.0.0.1) for local security
-        with socketserver.TCPServer(("127.0.0.1", port), Handler) as httpd:
+        with AppTCPServer(("127.0.0.1", port), Handler) as httpd:
             httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n🐶 Shutting down Cockapoo Responder server. Woof!")
+        print("\n🐶 Shutting down Doggie Soundboard. Woof!")
         sys.exit(0)
 
 if __name__ == '__main__':

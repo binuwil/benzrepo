@@ -1,15 +1,24 @@
 /**
- * Cockapoo Soundboard Application Controller (Simple & Focused)
+ * Doggie Soundboard Application Controller
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const audio = window.CockapooAudio;
-  const photoEl = document.getElementById('cockapoo-photo');
+  const photoEl = document.getElementById('dog-photo');
   const ringEl = document.getElementById('reaction-ring');
   const pillEl = document.getElementById('status-pill');
   const statusEmoji = document.getElementById('status-emoji');
   const statusText = document.getElementById('status-text');
   const pictureWrapper = document.getElementById('picture-wrapper');
+  const dogBreedSelect = document.getElementById('dog-breed-select');
+  const breedDescription = document.getElementById('breed-description');
+  const breedSoundBtn = document.getElementById('breed-sound-btn');
+  const comboBtn = document.getElementById('combo-btn');
+  const dogProfiles = window.DOG_PROFILES || [];
+  let currentDogProfile = null;
+  let comboRunning = false;
+  let comboRunId = 0;
+  let comboWait = null;
 
   function setStatus(emoji, text, highlight = true) {
     if (statusEmoji) statusEmoji.textContent = emoji;
@@ -18,6 +27,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (highlight) pillEl.classList.add('highlight');
       else pillEl.classList.remove('highlight');
     }
+  }
+
+  function stopPlayback() {
+    audio.stopActivePlayback();
+    comboRunId++;
+    if (comboWait) {
+      clearTimeout(comboWait.timer);
+      comboWait.resolve();
+      comboWait = null;
+    }
+    comboRunning = false;
+    if (comboBtn) {
+      comboBtn.classList.remove('running');
+      comboBtn.textContent = '▶️ Play Random Combos';
+    }
+  }
+
+  function waitForComboStep(duration) {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        comboWait = null;
+        resolve();
+      }, duration * 1000 + 150);
+      comboWait = { timer, resolve };
+    });
   }
 
     const allAnimClasses = [
@@ -42,15 +76,25 @@ document.addEventListener('DOMContentLoaded', () => {
         clearPhotoAnims();
         void photoEl.offsetWidth; // force re-flow for animation reset
 
-        if (name === 'curious_boof') {
+        if (name === 'breed_bark') {
+          photoEl.classList.add('bark-bounce');
+          setStatus('🐕', `${currentDogProfile?.name || 'Dog'} bark sample playing!`);
+        } else if (name === 'curious_boof') {
           photoEl.classList.add('tilt-left');
           setStatus('🧐', 'Curious Boof! Head tilted left!');
-        } else if (name === 'squeak') {
+        } else if (category === 'squeak') {
           photoEl.classList.add('tilt-right');
-          setStatus('🧸', 'SQUEAKER! Head tilted right!');
+          const squeakStatus = {
+            squeak: 'Classic squeak! Head tilted right!',
+            double_squeak: 'Double squeak! Ears perked!',
+            squeak_burst: 'Squeak burst! Ready to play!',
+            rubber_duck: 'Rubber duck squeak!',
+            wheezy_squeak: 'Wheezy squeak!'
+          };
+          setStatus('🧸', squeakStatus[name] || 'SQUEAKER! Head tilted right!');
         } else if (name === 'howl') {
           photoEl.classList.add('head-up');
-          setStatus('🎶', 'AWOOO! Singing along!');
+          setStatus('🐕', 'Real dog howl playing!');
         } else if (name === 'puppy_yip') {
           photoEl.classList.add('happy-wiggle');
           setStatus('🐾', 'Puppy Yip! Perked & happy!');
@@ -80,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tap on photo to interact & play happy wiggle yip
     if (pictureWrapper) {
       pictureWrapper.addEventListener('click', () => {
+        stopPlayback();
         audio.playPuppyYip();
         highlightCard('puppy-yip');
         clearPhotoAnims();
@@ -97,14 +142,35 @@ document.addEventListener('DOMContentLoaded', () => {
     'deep-woof': () => audio.playDeepWoof(),
     'alert-bark': () => audio.playAlertBark(),
     'squeak': () => audio.playSqueak(),
+    'double-squeak': () => audio.playDoubleSqueak(),
+    'squeak-burst': () => audio.playSqueakBurst(),
+    'rubber-duck': () => audio.playRubberDuck(),
+    'wheezy-squeak': () => audio.playWheezySqueak(),
     'howl': () => audio.playHowl()
   };
 
+  if (breedSoundBtn) {
+    breedSoundBtn.addEventListener('click', () => {
+      if (!currentDogProfile) return;
+      stopPlayback();
+      audio.playBreedBark(currentDogProfile.soundKey, currentDogProfile.soundOffset || 0);
+      flashButton(breedSoundBtn);
+    });
+  }
+
+  const shortcutButtons = new Map();
+
   // Sound buttons click handler
   document.querySelectorAll('[data-sound]').forEach(btn => {
+    const shortcut = btn.dataset.shortcut?.toLowerCase();
+    const badge = btn.querySelector('.key-badge');
+    if (shortcut) shortcutButtons.set(shortcut, btn);
+    if (badge && shortcut) badge.textContent = shortcut === 'space' ? 'Space' : shortcut.toUpperCase();
+
     btn.addEventListener('click', () => {
       const soundKey = btn.getAttribute('data-sound');
       if (actions[soundKey]) {
+          stopPlayback();
         actions[soundKey]();
         flashButton(btn);
       }
@@ -112,38 +178,46 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Head-Tilt Quick Combo sequence
-  const comboBtn = document.getElementById('combo-btn');
-  let comboRunning = false;
-
   if (comboBtn) {
-    comboBtn.addEventListener('click', async () => {
-      if (comboRunning) return;
+    comboBtn.addEventListener('click', () => {
+      if (comboRunning) {
+        stopPlayback();
+        return;
+      }
+      stopPlayback();
+      const runId = comboRunId;
       comboRunning = true;
       comboBtn.classList.add('running');
       comboBtn.textContent = '⏳ Playing...';
 
-      // 1. Curious Boof
-      audio.playCuriousBoof();
-      highlightCard('curious-boof');
+      const sounds = Object.keys(actions);
+      for (let index = sounds.length - 1; index > 0; index--) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [sounds[index], sounds[swapIndex]] = [sounds[swapIndex], sounds[index]];
+      }
+      const combo = sounds.slice(0, 3 + Math.floor(Math.random() * 3));
 
-      // 2. Squeaky Toy after 850ms
-      setTimeout(() => {
-        audio.playSqueak();
-        highlightCard('squeak');
-      }, 850);
+      const playCombo = async () => {
+        try {
+          for (const soundKey of combo) {
+            if (runId !== comboRunId) return;
+            const duration = await actions[soundKey]();
+            if (runId !== comboRunId) return;
+            highlightCard(soundKey);
+            await waitForComboStep(duration || 0.5);
+          }
+        } catch (error) {
+          console.error('Could not play random sound combo:', error);
+        } finally {
+          if (runId === comboRunId) {
+            comboRunning = false;
+            comboBtn.classList.remove('running');
+            comboBtn.textContent = '▶️ Play Random Combos';
+          }
+        }
+      };
 
-      // 3. Double Bark after 1550ms
-      setTimeout(() => {
-        audio.playDoubleBark();
-        highlightCard('double-bark');
-      }, 1550);
-
-      // Reset button after 2800ms
-      setTimeout(() => {
-        comboRunning = false;
-        comboBtn.classList.remove('running');
-        comboBtn.textContent = '▶️ Play Combo';
-      }, 2800);
+      playCombo();
     });
   }
 
@@ -165,19 +239,35 @@ document.addEventListener('DOMContentLoaded', () => {
     pitchSlider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
       audio.setPitchMultiplier(val);
-      if (photoEl) {
-        photoEl.classList.remove('puppy-scale', 'bigdog-scale');
-        if (val < 0.88) photoEl.classList.add('bigdog-scale');
-        else if (val > 1.12) photoEl.classList.add('puppy-scale');
-      }
-      if (val < 0.88) {
-        pitchDisplay.textContent = `${val.toFixed(2)}x (Big Dog)`;
-      } else if (val > 1.12) {
-        pitchDisplay.textContent = `${val.toFixed(2)}x (Puppy)`;
+      if (val < 1) {
+        pitchDisplay.textContent = `${val.toFixed(2)}x (Lower)`;
+      } else if (val > 1) {
+        pitchDisplay.textContent = `${val.toFixed(2)}x (Higher)`;
       } else {
-        pitchDisplay.textContent = 'Cockapoo (Normal)';
+        pitchDisplay.textContent = 'Normal (1.00x)';
       }
     });
+  }
+
+  if (dogBreedSelect) {
+    dogBreedSelect.addEventListener('change', () => {
+      const profile = dogProfiles.find(item => item.id === dogBreedSelect.value);
+      if (!profile) return;
+
+      stopPlayback();
+      currentDogProfile = profile;
+      photoEl.src = window.createDogPortrait(profile);
+      photoEl.alt = profile.name;
+      if (breedDescription) breedDescription.textContent = profile.description;
+      if (breedSoundBtn) breedSoundBtn.textContent = `Hear ${profile.soundLabel}`;
+      pitchSlider.value = profile.pitch;
+      pitchSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      setStatus('🐶', `${profile.name} selected. Choose a sound to play.` , false);
+    });
+  }
+
+  if (dogBreedSelect && dogProfiles.length) {
+    dogBreedSelect.dispatchEvent(new Event('change'));
   }
 
   // Volume Slider
@@ -195,32 +285,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') return;
-
-    if (e.code === 'Space') {
-      e.preventDefault();
-      audio.playSqueak();
-      highlightCard('squeak');
-    } else if (e.key === '1') {
-      audio.playClassicBark();
-      highlightCard('classic-bark');
-    } else if (e.key === '2') {
-      audio.playDoubleBark();
-      highlightCard('double-bark');
-    } else if (e.key === '3') {
-      audio.playPuppyYip();
-      highlightCard('puppy-yip');
-    } else if (e.key === '4') {
-      audio.playCuriousBoof();
-      highlightCard('curious-boof');
-    } else if (e.key === '5') {
-      audio.playDeepWoof();
-      highlightCard('deep-woof');
-    } else if (e.key === '6') {
-      audio.playAlertBark();
-      highlightCard('alert-bark');
-    } else if (e.key.toLowerCase() === 'h') {
-      audio.playHowl();
-      highlightCard('howl');
-    }
+    const key = e.code === 'Space' ? 'space' : e.key.toLowerCase();
+    const btn = shortcutButtons.get(key);
+    if (!btn) return;
+    const soundKey = btn.dataset.sound;
+    stopPlayback();
+    if (key === 'space') e.preventDefault();
+    actions[soundKey]();
+    flashButton(btn);
   });
 });

@@ -8,8 +8,14 @@ class CockapooAudioEngine {
     this.ctx = null;
     this.masterGain = null;
     this.compressor = null;
+    this.loadPromise = null;
     this.pitchMultiplier = 1.0; // 0.7x (Big Dog) to 1.4x (Puppy)
     this.masterVolume = 0.90;
+    this.activeSources = new Set();
+    this.playbackId = 0;
+    this.playbackEndTimer = null;
+    this.activeHowlSource = null;
+    this.currentSoundName = null;
 
     // Decoded real audio buffers cache
     this.buffers = {};
@@ -21,7 +27,7 @@ class CockapooAudioEngine {
   }
 
   /**
-   * Initialize Web Audio API and pre-decode all real dog bark recordings
+    * Initialize Web Audio API and pre-decode bundled canine recordings
    */
   async initContext() {
     if (!this.ctx) {
@@ -43,8 +49,10 @@ class CockapooAudioEngine {
       this.masterGain.connect(this.ctx.destination);
 
       // Pre-decode all real audio files into memory
-      await this.loadRealBarkBuffers();
+      this.loadPromise = this.loadRealBarkBuffers();
     }
+
+    if (this.loadPromise) await this.loadPromise;
 
     if (this.ctx.state === 'suspended') {
       await this.ctx.resume();
@@ -62,9 +70,7 @@ class CockapooAudioEngine {
   }
 
   async loadRealBarkBuffers() {
-    if (!window.REAL_BARKS) return;
-
-    for (const [key, b64Data] of Object.entries(window.REAL_BARKS)) {
+    for (const [key, b64Data] of Object.entries(window.REAL_BARKS || {})) {
       try {
         const arrayBuf = this.base64ToArrayBuffer(b64Data);
         // decodeAudioData returns a promise in modern browsers
@@ -73,6 +79,51 @@ class CockapooAudioEngine {
         console.warn(`Could not decode bark ${key}:`, err);
       }
     }
+
+    try {
+      const response = await fetch('audio/classic_squeak_pixabay.mp3');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      this.buffers.classic_squeak = await this.ctx.decodeAudioData(await response.arrayBuffer());
+    } catch (err) {
+      console.warn('Could not decode Pixabay squeaky-toy recording:', err);
+    }
+
+    for (const [key, path] of Object.entries({
+      double_squeak: 'audio/double_squeak_pixabay.mp3',
+      squeak_burst: 'audio/squeak_burst_pixabay.mp3',
+      rubber_duck: 'audio/rubber_duck_pixabay.mp3'
+    })) {
+      try {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        this.buffers[key] = await this.ctx.decodeAudioData(await response.arrayBuffer());
+      } catch (err) {
+        console.warn(`Could not decode ${key} recording:`, err);
+      }
+    }
+
+    try {
+      const response = await fetch('audio/dog_howl.mp3');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      this.buffers.howl = await this.ctx.decodeAudioData(await response.arrayBuffer());
+    } catch (err) {
+      console.warn('Could not decode dog howl recording:', err);
+    }
+
+    for (const [key, path] of Object.entries({
+      breed_german_shepherd: 'audio/breed-german-shepherd.mp3',
+      breed_bulldog: 'audio/breed-bulldog.mp3',
+      breed_terrier: 'audio/breed-terrier.mp3'
+    })) {
+      try {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        this.buffers[key] = await this.ctx.decodeAudioData(await response.arrayBuffer());
+      } catch (err) {
+        console.warn(`Could not decode ${key} recording:`, err);
+      }
+    }
+
     this.isLoaded = true;
   }
 
@@ -87,11 +138,38 @@ class CockapooAudioEngine {
     }
   }
 
+  trackSource(source) {
+    this.activeSources.add(source);
+    source.onended = () => {
+      this.activeSources.delete(source);
+      if (this.activeHowlSource === source) this.activeHowlSource = null;
+    };
+  }
+
+  stopActivePlayback() {
+    this.playbackId++;
+    if (this.playbackEndTimer) clearTimeout(this.playbackEndTimer);
+    this.playbackEndTimer = null;
+    this.currentSoundName = null;
+
+    for (const source of this.activeSources) {
+      try {
+        source.stop(this.ctx.currentTime);
+      } catch (err) {
+        console.warn('Could not stop active audio source:', err);
+      }
+    }
+    this.activeSources.clear();
+    this.activeHowlSource = null;
+  }
+
   /**
    * Plays a genuine dog bark recording buffer with live pitch adjustment
    */
-  async playRealBark(soundKey, soundName) {
+  async playRealBark(soundKey, soundName, category = 'bark', repetitions = 1, repeatGap = 0.16, maxDuration = 0, startOffset = 0) {
+    const playbackId = this.playbackId;
     await this.initContext();
+    if (playbackId !== this.playbackId) return;
 
     const buffer = this.buffers[soundKey];
     if (!buffer) {
@@ -99,25 +177,67 @@ class CockapooAudioEngine {
       return;
     }
 
-    const source = this.ctx.createBufferSource();
-    source.buffer = buffer;
+    const startTime = this.ctx.currentTime;
+    const bufferOffset = Math.min(Math.max(0, startOffset), buffer.duration);
+    const availableDuration = buffer.duration - bufferOffset;
+    let playbackRate;
+    let sourceDuration;
+    let duration;
 
-    // Natural micro-variation (±2% pitch jitter so repeated taps sound organic)
-    const naturalJitter = 1.0 + (Math.random() - 0.5) * 0.04;
-    source.playbackRate.setValueAtTime(this.pitchMultiplier * naturalJitter, this.ctx.currentTime);
+    for (let index = 0; index < repetitions; index++) {
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      this.trackSource(source);
 
-    source.connect(this.compressor);
-    source.start(this.ctx.currentTime);
+      // Natural micro-variation (±2% pitch jitter so repeated taps sound organic)
+      const naturalJitter = 1.0 + (Math.random() - 0.5) * 0.04;
+      playbackRate = this.pitchMultiplier * naturalJitter;
+      source.playbackRate.setValueAtTime(playbackRate, startTime);
 
-    const duration = buffer.duration / this.pitchMultiplier;
-    this.notifyStart(soundName, 'bark', duration);
+      const sourceGain = soundName === 'howl' ? this.ctx.createGain() : null;
+      if (sourceGain) {
+        sourceGain.gain.setValueAtTime(4, startTime);
+        source.connect(sourceGain);
+        sourceGain.connect(this.compressor);
+      } else {
+        source.connect(this.compressor);
+      }
+
+      sourceDuration = soundName === 'howl'
+        ? Math.min(availableDuration, 4 * playbackRate)
+        : maxDuration > 0
+          ? Math.min(availableDuration, maxDuration * playbackRate)
+          : availableDuration;
+      duration = sourceDuration / playbackRate;
+      const sourceStart = startTime + index * (duration + repeatGap);
+
+      if (soundName === 'howl') {
+        this.activeHowlSource = source;
+      }
+
+      if (soundName === 'howl' || maxDuration > 0) {
+        source.start(sourceStart, bufferOffset, sourceDuration);
+      } else {
+        source.start(sourceStart, bufferOffset);
+      }
+    }
+
+    const totalDuration = duration * repetitions + repeatGap * (repetitions - 1);
+    this.notifyStart(soundName, category, totalDuration);
+    return totalDuration;
   }
 
   notifyStart(name, category, duration) {
+    if (this.playbackEndTimer) clearTimeout(this.playbackEndTimer);
+    const playbackId = this.playbackId;
+    this.currentSoundName = name;
     if (this.onSoundStart) {
       this.onSoundStart(name, category, { duration, pitch: this.pitchMultiplier });
     }
-    setTimeout(() => {
+    this.playbackEndTimer = setTimeout(() => {
+      if (playbackId !== this.playbackId) return;
+      this.playbackEndTimer = null;
+      this.currentSoundName = null;
       if (this.onSoundEnd) this.onSoundEnd(name);
     }, duration * 1000);
   }
@@ -126,145 +246,118 @@ class CockapooAudioEngine {
   // Core Dog Bark Sounds (Real Recordings)
   // -------------------------------------------------------------------------
   playClassicBark() {
-    this.playRealBark('single', 'classic_bark');
+    return this.playRealBark('single', 'classic_bark');
   }
 
   playDoubleBark() {
-    this.playRealBark('double', 'double_bark');
+    return this.playRealBark('double', 'double_bark');
   }
 
   playPuppyYip() {
-    this.playRealBark('puppy', 'puppy_yip');
+    return this.playRealBark('puppy', 'puppy_yip');
   }
 
   playCuriousBoof() {
-    this.playRealBark('boof', 'curious_boof');
+    return this.playRealBark('boof', 'curious_boof');
   }
 
   playDeepWoof() {
-    this.playRealBark('woof', 'deep_woof');
+    return this.playRealBark('woof', 'deep_woof');
   }
 
   playAlertBark() {
-    this.playRealBark('alert', 'alert_bark');
+    return this.playRealBark('alert', 'alert_bark');
+  }
+
+  playBreedBark(soundKey, startOffset = 0) {
+    return this.playRealBark(soundKey, 'breed_bark', 'bark', 1, 0.16, 4, startOffset);
   }
 
   // -------------------------------------------------------------------------
   // Bonus Dog Attention Sounds (Squeaker & Sing-Along Howl)
   // -------------------------------------------------------------------------
 
-  /**
-   * Authentic Dual-Tone Squeaky Toy (Press & Release Squeak)
-   */
-  async playSqueak() {
+  async playSqueakPattern(soundName, notes) {
+    const playbackId = this.playbackId;
     await this.initContext();
-    const t = this.ctx.currentTime;
-    const dur = 0.35;
-    const baseFreq = 2100 * this.pitchMultiplier;
+    if (playbackId !== this.playbackId) return;
+    const now = this.ctx.currentTime;
+    let totalDuration = 0;
 
-    // Carrier & FM Modulator for realistic rubber toy squish
-    const carrier = this.ctx.createOscillator();
-    const modulator = this.ctx.createOscillator();
-    const modGain = this.ctx.createGain();
-    const filter = this.ctx.createBiquadFilter();
-    const gain = this.ctx.createGain();
+    for (const note of notes) {
+      const start = now + note.delay;
+      const duration = note.duration;
+      const baseFrequency = note.frequency * this.pitchMultiplier;
+      const attack = Math.min(0.018, duration * 0.2);
+      const carrier = this.ctx.createOscillator();
+      const modulator = this.ctx.createOscillator();
+      this.trackSource(carrier);
+      this.trackSource(modulator);
+      const modGain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+      const envelope = this.ctx.createGain();
 
-    carrier.type = 'sine';
-    modulator.type = 'triangle';
-    modulator.frequency.setValueAtTime(baseFreq * 1.5, t);
-    modGain.gain.setValueAtTime(baseFreq * 0.4, t);
-    modGain.gain.exponentialRampToValueAtTime(baseFreq * 0.05, t + dur);
+      carrier.type = note.waveform || 'sine';
+      modulator.type = 'triangle';
+      modulator.frequency.setValueAtTime(baseFrequency * (note.modRate || 1.5), start);
+      modGain.gain.setValueAtTime(baseFrequency * (note.modDepth || 0.4), start);
+      modGain.gain.exponentialRampToValueAtTime(baseFrequency * 0.05, start + duration);
 
-    modulator.connect(modGain);
-    modGain.connect(carrier.frequency);
+      modulator.connect(modGain);
+      modGain.connect(carrier.frequency);
 
-    carrier.frequency.setValueAtTime(baseFreq * 0.85, t);
-    carrier.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, t + 0.06);
-    carrier.frequency.exponentialRampToValueAtTime(baseFreq * 0.95, t + dur);
+      carrier.frequency.setValueAtTime(baseFrequency * 0.85, start);
+      carrier.frequency.exponentialRampToValueAtTime(baseFrequency * (note.peak || 1.25), start + Math.min(0.06, duration * 0.25));
+      carrier.frequency.exponentialRampToValueAtTime(baseFrequency * 0.95, start + duration);
 
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(baseFreq * 1.1, t);
-    filter.Q.setValueAtTime(5.0, t);
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(baseFrequency * 1.1, start);
+      filter.Q.setValueAtTime(note.filterQ || 5, start);
 
-    gain.gain.setValueAtTime(0.001, t);
-    gain.gain.linearRampToValueAtTime(0.9, t + 0.018);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      envelope.gain.setValueAtTime(0.001, start);
+      envelope.gain.linearRampToValueAtTime(note.volume || 0.9, start + attack);
+      envelope.gain.exponentialRampToValueAtTime(0.001, start + duration);
 
-    carrier.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.compressor);
+      carrier.connect(filter);
+      filter.connect(envelope);
+      envelope.connect(this.compressor);
 
-    modulator.start(t);
-    carrier.start(t);
-    modulator.stop(t + dur);
-    carrier.stop(t + dur);
+      modulator.start(start);
+      carrier.start(start);
+      modulator.stop(start + duration);
+      carrier.stop(start + duration);
+      totalDuration = Math.max(totalDuration, note.delay + duration);
+    }
 
-    this.notifyStart('squeak', 'squeak', dur);
+    this.notifyStart(soundName, 'squeak', totalDuration);
+    return totalDuration;
   }
 
-  /**
-   * "AWOOO" Sing-Along Pack Howl (triggers howling back)
-   */
-  async playHowl() {
-    await this.initContext();
-    const t = this.ctx.currentTime;
-    const dur = 2.2;
-    const base = 280 * this.pitchMultiplier;
-    const peak = 490 * this.pitchMultiplier;
+  playSqueak() {
+    return this.playRealBark('classic_squeak', 'squeak', 'squeak');
+  }
 
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const lfo = this.ctx.createOscillator();
-    const lfoGain = this.ctx.createGain();
-    const formant = this.ctx.createBiquadFilter();
-    const env = this.ctx.createGain();
+  playDoubleSqueak() {
+    return this.playRealBark('double_squeak', 'double_squeak', 'squeak', 2, 0.12);
+  }
 
-    osc1.type = 'sawtooth';
-    osc2.type = 'sine';
+  playSqueakBurst() {
+    return this.playRealBark('squeak_burst', 'squeak_burst', 'squeak');
+  }
 
-    const rise = 0.6;
-    const plateau = 1.6;
+  playRubberDuck() {
+    return this.playRealBark('rubber_duck', 'rubber_duck', 'squeak');
+  }
 
-    [osc1, osc2].forEach(osc => {
-      osc.frequency.setValueAtTime(base, t);
-      osc.frequency.exponentialRampToValueAtTime(peak, t + rise);
-      osc.frequency.setValueAtTime(peak, t + plateau);
-      osc.frequency.exponentialRampToValueAtTime(peak * 0.72, t + dur);
-    });
+  playWheezySqueak() {
+    return this.playSqueakPattern('wheezy_squeak', [
+      { delay: 0, duration: 0.55, frequency: 1700, waveform: 'sawtooth', modRate: 2.2, modDepth: 0.25, peak: 1.18, filterQ: 2 }
+    ]);
+  }
 
-    lfo.frequency.setValueAtTime(5.4, t);
-    lfoGain.gain.setValueAtTime(2, t);
-    lfoGain.gain.linearRampToValueAtTime(14 * this.pitchMultiplier, t + rise);
-    lfoGain.gain.setValueAtTime(14 * this.pitchMultiplier, t + plateau);
-    lfoGain.gain.linearRampToValueAtTime(2, t + dur);
-
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc1.frequency);
-    lfoGain.connect(osc2.frequency);
-
-    formant.type = 'bandpass';
-    formant.frequency.setValueAtTime(base * 1.6, t);
-    formant.frequency.exponentialRampToValueAtTime(peak * 1.5, t + rise);
-    formant.Q.setValueAtTime(3.2, t);
-
-    env.gain.setValueAtTime(0.001, t);
-    env.gain.linearRampToValueAtTime(0.75, t + 0.4);
-    env.gain.setValueAtTime(0.75, t + plateau);
-    env.gain.exponentialRampToValueAtTime(0.001, t + dur);
-
-    osc1.connect(formant);
-    osc2.connect(formant);
-    formant.connect(env);
-    env.connect(this.compressor);
-
-    lfo.start(t);
-    osc1.start(t);
-    osc2.start(t);
-    lfo.stop(t + dur);
-    osc1.stop(t + dur);
-    osc2.stop(t + dur);
-
-    this.notifyStart('howl', 'howl', dur);
+  /** Plays a recorded dog howl with the other real canine audio. */
+  playHowl() {
+    return this.playRealBark('howl', 'howl', 'howl');
   }
 }
 

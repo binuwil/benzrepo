@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Cockapoo Soundboard Styles (Simplified & Focused)
+  Doggie Soundboard Styles
    ========================================================================== */
 
 :root {
@@ -99,6 +99,30 @@ body {
   align-items: center;
 }
 
+.breed-picker {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 340px);
+  margin: 2px 0 14px;
+}
+
+.breed-picker label {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.breed-picker select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  padding: 8px 36px 8px 12px;
+  background: var(--surface);
+  color: var(--text-main);
+  font: inherit;
+}
+
 .picture-wrapper {
   display: flex;
   flex-direction: column;
@@ -118,7 +142,7 @@ body {
   box-shadow: 0 10px 28px rgba(226, 148, 59, 0.22), 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.cockapoo-img {
+.dog-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -130,46 +154,46 @@ body {
 }
 
 /* Dynamic Interactive Animations per Action */
-.cockapoo-img.tilt-left {
+.dog-photo.tilt-left {
   transform: rotate(-16deg) scale(1.06);
 }
 
-.cockapoo-img.tilt-right {
+.dog-photo.tilt-right {
   transform: rotate(16deg) scale(1.06);
 }
 
-.cockapoo-img.head-up {
+.dog-photo.head-up {
   transform: rotate(0deg) scale(1.08) translateY(-8px);
   filter: brightness(1.05);
 }
 
-.cockapoo-img.bark-bounce {
+.dog-photo.bark-bounce {
   transform: scale(1.1) translateY(-6px);
 }
 
-.cockapoo-img.double-bark-shake {
+.dog-photo.double-bark-shake {
   animation: double-bark-anim 0.4s ease-in-out;
 }
 
-.cockapoo-img.deep-woof-shake {
+.dog-photo.deep-woof-shake {
   transform: scale(1.12) translateY(3px);
   filter: contrast(1.05);
   animation: rumble 0.35s ease-in-out;
 }
 
-.cockapoo-img.alert-perk {
+.dog-photo.alert-perk {
   transform: scale(1.07) translateY(-10px) rotate(-3deg);
 }
 
-.cockapoo-img.happy-wiggle {
+.dog-photo.happy-wiggle {
   animation: happy-wiggle-anim 0.5s ease-in-out;
 }
 
-.cockapoo-img.puppy-scale {
+.dog-photo.puppy-scale {
   transform: scale(1.08) rotate(4deg);
 }
 
-.cockapoo-img.bigdog-scale {
+.dog-photo.bigdog-scale {
   transform: scale(0.96) rotate(-2deg);
 }
 
@@ -251,6 +275,25 @@ body {
   font-size: 0.8rem;
   color: var(--text-light);
   margin-top: 6px;
+  text-align: center;
+}
+
+.breed-sound-btn {
+  width: min(100%, 340px);
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 9px 14px;
+  border: 1px solid var(--accent-gold-hover);
+  border-radius: 8px;
+  background: var(--accent-gold-light);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.breed-sound-btn:hover {
+  background: #FFE8CC;
 }
 
 /* Quick Combo Banner */
